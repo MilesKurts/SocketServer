@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace Servidor
 {
@@ -50,15 +51,46 @@ namespace Servidor
 
                 byte[] dadosCliente = new byte[1024 * 50000];
                 int tamanhoBytesRecebidos = clienteSock.Receive(dadosCliente, dadosCliente.Length,0);
+                int tamanhoNomeArquivo = BitConverter.ToInt32(dadosCliente, 0);
+                string nomeArquivo = Encoding.UTF8.GetString(dadosCliente,4,tamanhoNomeArquivo);
 
+                BinaryWriter bWriter = new BinaryWriter(File.Open(PastaRecepcaoArquivos+nomeArquivo, FileMode.Append));
+                bWriter.Write(dadosCliente, 4+tamanhoNomeArquivo, tamanhoBytesRecebidos - 4 - tamanhoNomeArquivo);
+
+                while (tamanhoBytesRecebidos > 0)
+                {
+                    tamanhoBytesRecebidos = clienteSock.Receive(dadosCliente,dadosCliente.Length,0);
+                    if (tamanhoBytesRecebidos == 0)
+                    {
+                        bWriter.Close();
+                    }
+                    else
+                    {
+                        bWriter.Write(dadosCliente,0,tamanhoBytesRecebidos);
+                    }
+                    ListaMensagem.Invoke(new Action(() =>
+                    {
+                        ListaMensagem.Items.Add($"Arquivo recebido e arquivado [{nomeArquivo}]");
+                        ListaMensagem.SetSelected(ListaMensagem.Items.Count - 1, true);
+                    }));
+
+                    bWriter.Close();
+                    clienteSock.Close();
+                }
             }
             catch (SocketException ex)
             {
-
+                ListaMensagem.Invoke(new Action(() =>
+                {
+                    ListaMensagem.Items.Add($"Erro ao receber o arquivo...{ex.Message}");
+                    ListaMensagem.SetSelected(ListaMensagem.Items.Count - 1, true);
+                }));
             }
             finally
             {
-
+                sock_Servidor.Close();
+                sock_Servidor.Dispose();
+                iniciarServidor();
             }
         }
     }
