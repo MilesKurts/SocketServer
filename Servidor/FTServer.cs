@@ -10,7 +10,7 @@ using System.IO;
 
 namespace Servidor
 {
-    internal class FTServer
+    class FTServer
     {
         static IPEndPoint ipEnd_Servidor;
         static Socket sock_Servidor;
@@ -27,12 +27,12 @@ namespace Servidor
                 sock_Servidor = new Socket(AddressFamily.InterNetwork,SocketType.Stream, ProtocolType.IP);
                 sock_Servidor.Bind(ipEnd_Servidor);
             }
-            catch (Exception ex)
+            catch (SocketException ex)
             {
                 ListaMensagem.Invoke(new Action(() =>
                 {
                     ListaMensagem.Items.Add($"Erro ao iniciar servidor : {ex.Message}");
-                    ListaMensagem.SetSelected(ListaMensagem.Items.Count - 1,true);
+                    ListaMensagem.SetSelected(ListaMensagem.Items.Count -1,true);
 
                 }));
                 return;
@@ -52,7 +52,7 @@ namespace Servidor
                 byte[] dadosCliente = new byte[1024 * 50000];
                 int tamanhoBytesRecebidos = clienteSock.Receive(dadosCliente, dadosCliente.Length,0);
                 int tamanhoNomeArquivo = BitConverter.ToInt32(dadosCliente, 0);
-                string nomeArquivo = Encoding.UTF8.GetString(dadosCliente,4,tamanhoNomeArquivo);
+                string nomeArquivo = Encoding.UTF8.GetString(dadosCliente, 4, tamanhoNomeArquivo);
 
                 BinaryWriter bWriter = new BinaryWriter(File.Open(PastaRecepcaoArquivos+nomeArquivo, FileMode.Append));
                 bWriter.Write(dadosCliente, 4+tamanhoNomeArquivo, tamanhoBytesRecebidos - 4 - tamanhoNomeArquivo);
